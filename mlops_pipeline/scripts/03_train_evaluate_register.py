@@ -1,66 +1,114 @@
-import sys, os
+import os
+import sys
+import argparse
+import tempfile
 import pandas as pd
+import mlflow
+from mlflow.tracking import MlflowClient
+
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score
-import mlflow, mlflow.sklearn
-from mlflow.artifacts import download_artifacts
 
-def train_evaluate_register(preprocessing_run_id, n_estimators=300):
-    ACCURACY_THRESHOLD = 0.80
-    mlflow.set_experiment("Titanic - Model Training")
 
-    with mlflow.start_run(run_name=f"rf_n{n_estimators}"):
-        mlflow.set_tag("ml.step", "model_training_evaluation")
-        mlflow.log_param("preprocessing_run_id", preprocessing_run_id)
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Train/Evaluate/Register model using processed artifacts from a previous run_id"
+    )
+    parser.add_argument("run_id", help="MLflow run_id from preprocessing step")
+    parser.add_argument("--n-estimators", type=int, default=300,
+                        help="Number of trees for RandomForest (default: 300)")
+    parser.add_argument("--acc-threshold", type=float, default=0.85,
+                        help="Accuracy threshold to allow model registration (default: 0.85)")
+    parser.add_argument("--model-name", type=str, default="titanic-classifier-prod",
+                        help="Registered Model name (default: titanic-classifier-prod)")
+    return parser.parse_args()
 
-        # ✅ โหลด artifacts จาก Run ID
-        local_path = download_artifacts(run_id=preprocessing_run_id, artifact_path="processed_data")
-        train_path = os.path.join(local_path, "train.csv")
-        test_path  = os.path.join(local_path, "test.csv")
 
-        train_df = pd.read_csv(train_path)
-        test_df  = pd.read_csv(test_path)
+def main():
+    args = parse_args()
+    run_id = args.run_id
+    n_estimators = args.n_estimators
+    acc_threshold = args.acc_threshold
+    model_name = args.model_name
 
-        X_train, y_train = train_df.drop('Survived', axis=1), train_df['Survived']
-        X_test,  y_test  = test_df.drop('Survived', axis=1),  test_df['Survived']
+    mlflow.set_experiment("Titanic - Train/Evaluate/Register")
 
-        pipeline = Pipeline([
-            ("model", RandomForestClassifier(
-                n_estimators=n_estimators,
-                random_state=42,
-                n_jobs=-1,
-                class_weight="balanced_subsample"
-            ))
-        ])
-
-        pipeline.fit(X_train, y_train)
-        y_pred = pipeline.predict(X_test)
-        acc = accuracy_score(y_test, y_pred)
-        print(f"✅ Accuracy: {acc:.4f}")
-
+    with mlflow.start_run() as run:
+        this_run_id = run.info.run_id
+        mlflow.set_tag("ml.step", "train_evaluate_register")
+        mlflow.log_param("source_run_id", run_id)
         mlflow.log_param("n_estimators", n_estimators)
+        mlflow.log_param("acc_threshold", acc_threshold)
+        mlflow.log_param("model_name", model_name)
+
+        # -------- 1) ดาวน์โหลด artifacts จาก run ก่อนหน้า --------
+        client = MlflowClient()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # โฟลเดอร์ artifacts ที่เรา log ไว้ในขั้น preprocess คือ "processed_data"
+            local_dir = client.download_artifacts(run_id, "processed_data", tmpdir)
+
+            train_path = os.path.join(local_dir, "train.csv")
+            test_path = os.path.join(local_dir, "test.csv")
+
+            if not os.path.exists(train_path) or not os.path.exists(test_path):
+                raise FileNotFoundError(
+                    f"train/test csv not found in artifacts of run_id={run_id}. "
+                    f"Looked for: {train_path} and {test_path}"
+                )
+
+            train_df = pd.read_csv(train_path)
+            test_df = pd.read_csv(test_path)
+
+        # -------- 2) แยก X,y --------
+        if "Survived" not in train_df.columns:
+            raise KeyError("Target column 'Survived' not found in train.csv")
+        if "Survived" not in test_df.columns:
+            raise KeyError("Target column 'Survived' not found in test.csv")
+
+        X_train = train_df.drop("Survived", axis=1)
+        y_train = train_df["Survived"]
+        X_test = test_df.drop("Survived", axis=1)
+        y_test = test_df["Survived"]
+
+        # -------- 3) เทรนโมเดล --------
+        clf = RandomForestClassifier(
+            n_estimators=n_estimators,
+            random_state=42,
+            n_jobs=-1
+        )
+        clf.fit(X_train, y_train)
+
+        # -------- 4) ประเมินผล --------
+        y_pred = clf.predict(X_test)
+        acc = accuracy_score(y_test, y_pred)
         mlflow.log_metric("accuracy", acc)
 
-        mlflow.sklearn.log_model(
-            pipeline,
-            "titanic_classifier_pipeline",
-            input_example=X_train.head(1)
-        )
+        print(f"Accuracy = {acc:.4f} (threshold = {acc_threshold})")
 
-        if acc >= ACCURACY_THRESHOLD:
-            print("🎉 Accuracy meets threshold. Registering model...")
-            model_uri = f"runs:/{mlflow.active_run().info.run_id}/titanic_classifier_pipeline"
-            registered = mlflow.register_model(model_uri, "titanic-classifier-prod")
-            print(f"📦 Registered model: {registered.name}, version {registered.version}")
+        # -------- 5) ล็อกโมเดล + ลงทะเบียนแบบมีเงื่อนไข threshold --------
+        # เคล็ดลับ: log_model พร้อม registered_model_name จะ "สร้างเวอร์ชันใหม่" ใน Model Registry ให้อัตโนมัติ
+        if acc >= acc_threshold:
+            mlflow.sklearn.log_model(
+                sk_model=clf,
+                artifact_path="model",
+                registered_model_name=model_name
+            )
+            mlflow.set_tag("registration", "succeeded")
+            print(f"✅ Registered model '{model_name}' (run: {this_run_id})")
         else:
-            print("ℹ️ Accuracy below threshold. Not registering.")
+            mlflow.sklearn.log_model(
+                sk_model=clf,
+                artifact_path="model"
+            )
+            mlflow.set_tag("registration", "skipped_below_threshold")
+            msg = (f"Model accuracy {acc:.4f} < {acc_threshold}. "
+                   f"Skip registration for '{model_name}'.")
+            print(f"⚠️  {msg}")
+            # ถ้าอยากให้ fail job เมื่อไม่ผ่าน threshold ให้ uncomment บรรทัดต่อไป:
+            # raise SystemExit(1)
+
+        print(f"✅ Train/Eval finished. This run_id: {this_run_id}")
+
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python scripts/03_train_evaluate_register.py <preprocessing_run_id> [n_estimators]")
-        sys.exit(1)
-
-    run_id = sys.argv[1]
-    n_est = int(sys.argv[2]) if len(sys.argv) > 2 else 300
-    train_evaluate_register(preprocessing_run_id=run_id, n_estimators=n_est)
+    main()
