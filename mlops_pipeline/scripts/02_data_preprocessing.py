@@ -44,10 +44,14 @@ def preprocess_data(test_size=0.25, random_state=42):
         pd.concat([X_train, y_train], axis=1).to_csv("processed_data/train.csv", index=False)
         pd.concat([X_test,  y_test ], axis=1).to_csv("processed_data/test.csv",  index=False)
 
+        # Log to MLflow
         mlflow.log_param("test_size", test_size)
         mlflow.log_metric("training_set_rows", len(X_train))
         mlflow.log_metric("test_set_rows", len(X_test))
-        mlflow.log_artifacts("processed_data", artifact_path="processed_data")
+
+        # ✅ ใช้ relative path ไม่ให้ไป "/C:"
+        mlflow.log_artifacts(os.path.join(os.getcwd(), "processed_data"),
+                             artifact_path="processed_data")
 
         print(f"Preprocessing Run ID: {run_id}")
 
@@ -55,6 +59,7 @@ def preprocess_data(test_size=0.25, random_state=42):
         if "GITHUB_OUTPUT" in os.environ:
             with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
                 fh.write(f"run_id={run_id}\n")
+                
 
 if __name__ == "__main__":
     preprocess_data()
