@@ -1,29 +1,30 @@
+import sys
 import mlflow
-import pandas as pd
+from mlflow.tracking import MlflowClient
 
-def load_and_predict():
-    MODEL_NAME = "titanic-classifier-prod"
-    MODEL_STAGE = "Staging"
+def main():
+    if len(sys.argv) < 3:
+        print("Usage: python 04_transition_model.py <model_name> <alias>")
+        sys.exit(1)
 
-    print(f"Loading model '{MODEL_NAME}' from stage '{MODEL_STAGE}'...")
-    try:
-        model = mlflow.pyfunc.load_model(model_uri=f"models:/{MODEL_NAME}/{MODEL_STAGE}")
-    except mlflow.exceptions.MlflowException as e:
-        print(f"Error loading model: {e}")
-        print(f"Ensure a model version exists in stage '{MODEL_STAGE}' in MLflow UI.")
-        return
+    model_name = sys.argv[1]
+    alias = sys.argv[2]
 
-    df = pd.read_csv("processed_data/test.csv")
-    sample = df.drop(columns=['Survived']).iloc[0:1]
-    actual = df['Survived'].iloc[0]
+    client = MlflowClient()
 
-    pred = model.predict(sample)
+    # หารุ่นล่าสุดของโมเดลนี้
+    versions = client.get_latest_versions(model_name)
+    if not versions:
+        print(f"No versions found for model '{model_name}'.")
+        sys.exit(1)
 
-    print("------------------------------")
-    print(f"Sample features:\n{sample.to_dict(orient='records')[0]}")
-    print(f"Actual Label: {actual}")
-    print(f"Predicted Label: {pred[0]}")
-    print("------------------------------")
+    latest = versions[-1]  # เอาเวอร์ชันล่าสุด
+    version = latest.version
+
+    # ตั้ง alias เช่น "Staging"
+    client.set_registered_model_alias(model_name, alias, version)
+
+    print(f"✅ Model '{model_name}' version {version} transitioned to alias '{alias}'.")
 
 if __name__ == "__main__":
-    load_and_predict()
+    main()
