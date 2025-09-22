@@ -6,6 +6,10 @@ from sklearn.metrics import accuracy_score
 import mlflow, mlflow.sklearn
 from mlflow.artifacts import download_artifacts
 
+# ✅ บังคับใช้โลคัลถ้าไม่กำหนดจาก ENV
+if not os.environ.get("MLFLOW_TRACKING_URI"):
+    mlflow.set_tracking_uri("file:./mlruns")
+
 def train_evaluate_register(preprocessing_run_id, n_estimators=300):
     ACCURACY_THRESHOLD = 0.80
     mlflow.set_experiment("Titanic - Model Training")

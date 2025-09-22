@@ -3,6 +3,10 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 import mlflow
 
+# ✅ บังคับใช้โลคัลถ้าไม่กำหนดจาก ENV
+if not os.environ.get("MLFLOW_TRACKING_URI"):
+    mlflow.set_tracking_uri("file:./mlruns")
+
 def preprocess_data(test_size=0.25, random_state=42):
     mlflow.set_experiment("Titanic - Data Preprocessing")
     with mlflow.start_run() as run:
