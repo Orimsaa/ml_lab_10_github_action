@@ -1,5 +1,4 @@
 import sys
-import mlflow
 from mlflow.tracking import MlflowClient
 
 def main():
@@ -11,17 +10,13 @@ def main():
     alias = sys.argv[2]
 
     client = MlflowClient()
-
-    # หารุ่นล่าสุดของโมเดลนี้
     versions = client.get_latest_versions(model_name)
     if not versions:
         print(f"No versions found for model '{model_name}'.")
         sys.exit(1)
 
-    latest = versions[-1]  # เอาเวอร์ชันล่าสุด
+    latest = versions[-1]
     version = latest.version
-
-    # ตั้ง alias เช่น "Staging"
     client.set_registered_model_alias(model_name, alias, version)
 
     print(f"✅ Model '{model_name}' version {version} transitioned to alias '{alias}'.")
