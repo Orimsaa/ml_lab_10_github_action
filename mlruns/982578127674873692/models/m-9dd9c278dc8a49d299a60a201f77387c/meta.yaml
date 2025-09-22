@@ -1,0 +1,10 @@
+artifact_location: file:///C:/mlops_pipeline/mlruns/982578127674873692/models/m-9dd9c278dc8a49d299a60a201f77387c/artifacts
+creation_timestamp: 1757908246608
+experiment_id: '982578127674873692'
+last_updated_timestamp: 1757908249635
+model_id: m-9dd9c278dc8a49d299a60a201f77387c
+model_type: null
+name: titanic_classifier_pipeline
+source_run_id: f80b9128ccd34b30afb6aef70cf290cb
+status: 2
+status_message: null

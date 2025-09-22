@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/mlops_pipeline/mlruns/982578127674873692/f80b9128ccd34b30afb6aef70cf290cb/artifacts
+end_time: 1757908249641
+entry_point_name: ''
+experiment_id: '982578127674873692'
+lifecycle_stage: active
+run_id: f80b9128ccd34b30afb6aef70cf290cb
+run_name: logreg_C_10.0
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1757908246542
+status: 3
+tags: []
+user_id: computer

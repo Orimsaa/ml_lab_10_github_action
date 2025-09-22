@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/mlops_pipeline/mlruns/982578127674873692/61302860e3bc4ba187c9f8d3b526fc10/artifacts
+end_time: 1757908559584
+entry_point_name: ''
+experiment_id: '982578127674873692'
+lifecycle_stage: active
+run_id: 61302860e3bc4ba187c9f8d3b526fc10
+run_name: rf_n300
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1757908555629
+status: 3
+tags: []
+user_id: computer

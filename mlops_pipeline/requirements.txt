@@ -1,0 +1,7 @@
+numpy<2.0
+mlflow
+scikit-learn
+pandas
+requests
+flake8
+pytest

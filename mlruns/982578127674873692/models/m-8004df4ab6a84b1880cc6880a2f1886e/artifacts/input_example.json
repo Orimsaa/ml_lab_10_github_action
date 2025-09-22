@@ -1,0 +1,1 @@
+{"columns": ["Age", "SibSp", "Parch", "Fare", "FamilySize", "IsAlone", "Sex_male", "Embarked_Q", "Embarked_S", "Pclass_2", "Pclass_3", "Title_Miss", "Title_Mr", "Title_Mrs", "Title_Rare", "Title_the Countess"], "data": [[35.0, 1, 0, 90.0, 2, 0, false, false, true, false, false, false, false, true, false, false]]}

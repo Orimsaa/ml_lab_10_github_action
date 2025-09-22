@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/mlops_pipeline/mlruns/791015546961846654/b4386c11af6949f180e2d0e320abac4e/artifacts
+end_time: 1757908388181
+entry_point_name: ''
+experiment_id: '791015546961846654'
+lifecycle_stage: active
+run_id: b4386c11af6949f180e2d0e320abac4e
+run_name: redolent-owl-349
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1757908388118
+status: 3
+tags: []
+user_id: computer

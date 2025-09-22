@@ -1,0 +1,6 @@
+artifact_location: file:///C:/mlops_pipeline/mlruns/288568672736641543
+creation_time: 1757907931566
+experiment_id: '288568672736641543'
+last_update_time: 1757907931566
+lifecycle_stage: active
+name: Titanic - Data Preprocessing
