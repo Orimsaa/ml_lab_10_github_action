@@ -10,26 +10,20 @@ def load_and_predict():
         model = mlflow.pyfunc.load_model(model_uri=f"models:/{MODEL_NAME}/{MODEL_STAGE}")
     except mlflow.exceptions.MlflowException as e:
         print(f"Error loading model: {e}")
+        print(f"Ensure a model version exists in stage '{MODEL_STAGE}' in MLflow UI.")
         return
 
     df = pd.read_csv("processed_data/test.csv")
+    sample = df.drop(columns=['Survived']).iloc[0:1]
+    actual = df['Survived'].iloc[0]
 
-    if "Survived" in df.columns:
-        X_sample = df.drop(columns=["Survived"]).iloc[:1]
-        actual = df["Survived"].iloc[0]
-    else:
-        X_sample = df.iloc[:1]
-        actual = None
+    pred = model.predict(sample)
 
-    pred = model.predict(X_sample)
-
-    print("-" * 30)
-    print("Sample features (first row):")
-    print(X_sample.to_string(index=False))
-    if actual is not None:
-        print(f"Actual Label: {actual}")
-    print(f"Predicted Label: {int(pred[0])}")
-    print("-" * 30)
+    print("------------------------------")
+    print(f"Sample features:\n{sample.to_dict(orient='records')[0]}")
+    print(f"Actual Label: {actual}")
+    print(f"Predicted Label: {pred[0]}")
+    print("------------------------------")
 
 if __name__ == "__main__":
     load_and_predict()

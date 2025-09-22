@@ -1,10 +1,5 @@
 import pandas as pd
 import mlflow
-import os
-
-# ✅ บังคับใช้โลคัลถ้าไม่กำหนดจาก ENV
-if not os.environ.get("MLFLOW_TRACKING_URI"):
-    mlflow.set_tracking_uri("file:./mlruns")
 
 def validate_data():
     mlflow.set_experiment("Titanic - Data Validation")
