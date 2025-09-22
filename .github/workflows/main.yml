@@ -46,11 +46,6 @@ jobs:
   build-and-train:
     needs: ci-checks
     runs-on: ubuntu-latest
-    env:
-      MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
-      MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
-      MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
-
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
@@ -65,27 +60,31 @@ jobs:
 
     - name: Run Data Validation
       shell: bash
+      timeout-minutes: 5
       run: |
-        python mlops_pipeline/scripts/01_data_validation.py
+        python -u mlops_pipeline/scripts/01_data_validation.py
 
     - name: Run Data Preprocessing
       id: preprocessing
       shell: bash
+      timeout-minutes: 5
       run: |
-        python mlops_pipeline/scripts/02_data_preprocessing.py
+        python -u mlops_pipeline/scripts/02_data_preprocessing.py
 
     - name: Run Model Training, Evaluation, and Registration
       shell: bash
+      timeout-minutes: 10
       run: |
         # arg1: run_id จาก step preprocessing (อ่านจาก $GITHUB_OUTPUT ในสคริปต์)
-        # arg2: ACCURACY_THRESHOLD (ตั้งให้เหมาะกับงานจริง)
-        python mlops_pipeline/scripts/03_train_evaluate_register.py ${{ steps.preprocessing.outputs.run_id }} 0.85
+        # arg2: ACCURACY_THRESHOLD (ตั้งตามงานจริง)
+        python -u mlops_pipeline/scripts/03_train_evaluate_register.py ${{ steps.preprocessing.outputs.run_id }} 0.85
 
     - name: Transition Model to Staging
       if: success()
       shell: bash
+      timeout-minutes: 3
       run: |
-        python mlops_pipeline/scripts/04_transition_model.py "wine-classifier-prod" "Staging"
+        python -u mlops_pipeline/scripts/04_transition_model.py "wine-classifier-prod" "Staging"
 
     - name: Upload MLflow artifacts (skip if using remote tracking)
       if: ${{ hashFiles('mlruns/**') != '' }}
