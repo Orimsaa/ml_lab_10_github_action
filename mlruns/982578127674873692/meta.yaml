@@ -1,6 +1,0 @@
-artifact_location: file:///C:/mlops_pipeline/mlruns/982578127674873692
-creation_time: 1757908246425
-experiment_id: '982578127674873692'
-last_update_time: 1757908246425
-lifecycle_stage: active
-name: Titanic - Model Training
