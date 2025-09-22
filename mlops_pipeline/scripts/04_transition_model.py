@@ -10,9 +10,10 @@ def main():
     alias = sys.argv[2]
 
     client = MlflowClient()
+    # ใช้เวอร์ชันล่าสุดของโมเดล (model registry)
     versions = client.get_latest_versions(model_name)
     if not versions:
-        print(f"No versions found for model '{model_name}'.")
+        print(f"❌ No versions found for model '{model_name}'. Did training register a model?")
         sys.exit(1)
 
     latest = versions[-1]
